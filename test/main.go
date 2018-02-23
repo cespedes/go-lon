@@ -11,14 +11,12 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	b := make([]byte, 4096)
 	for n:=0; n<10; n++ {
-		i, e, cnip := c.Read(b)
+		p, e := c.Read2()
 		if e != nil {
 			fmt.Println(e)
 		} else {
-			fmt.Println(b[0:i])
-			fmt.Println(cnip)
+			fmt.Println(p)
 		}
 	}
 	c.Close()
