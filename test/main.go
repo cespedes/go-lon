@@ -12,7 +12,7 @@ func main() {
 		fmt.Println(err)
 	}
 	for n:=0; n<10; n++ {
-		p, e := c.Read2()
+		p, e := c.Read()
 		if e != nil {
 			fmt.Println(e)
 		} else {
