@@ -34,13 +34,14 @@ const (
 
 type Lon struct {
 	// Flags:
-	Prior	uint8
-	AltPath	uint8
-	DeltaBL	uint8
-	Version	uint8
-	PDUFmt	uint8
-	AddrFmt	uint8
-	DomLen	uint8
+	Prior		uint8
+	AltPath		uint8
+	DeltaBL		uint8
+	Version		uint8
+	PDUFmt		uint8
+	AddrFmt		uint8
+	DomLen		uint8
+
 	// Address:
 	SrcSubnet	uint8
 	SrcNode		uint8
@@ -101,9 +102,6 @@ func (c Conn) Read() (p Packet, err error) {
 	p.Lon.SrcSubnet = b[CnipLen+2]
 	p.Lon.SrcNode = b[CnipLen+3] & 0x7F
 
-//	Domain		uint64
-//	EnclPDU		[]byte
-
 	domain_offset := 5
 	switch p.Lon.AddrFmt {
 	case 0:
@@ -144,11 +142,9 @@ func (c Conn) Read() (p Packet, err error) {
 				(uint64(b[CnipLen+domain_offset+5]))
 		p.Lon.EnclPDU = b[CnipLen+domain_offset+6:]
 	}
-//	p.Lon = b[20:i]
 	return p, e
 }
 
 func (p Packet) String() string {
-//	return fmt.Sprintf("%v %v", p.Cnip, p.bytes[20:])
 	return fmt.Sprintf("%v %v %v", p.Cnip, p.Lon, p.bytes[CnipLen:])
 }
