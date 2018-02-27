@@ -145,6 +145,83 @@ func (c Conn) Read() (p Packet, err error) {
 	return p, e
 }
 
+func (p Packet) Src() (s string) {
+	s = fmt.Sprintf("%d,%d,%d", p.Lon.Domain, p.Lon.SrcSubnet, p.Lon.SrcNode)
+	return
+}
+
+func (p Packet) Dst() (d string) {
+	switch p.Lon.AddrFmt {
+	case 0: // DstSubnet
+		return fmt.Sprintf("%d,*", p.Lon.DstSubnet)
+	case 1: // DstGroup
+		return fmt.Sprintf("g=%d", p.Lon.DstGroup)
+	case 2:
+		if p.bytes[CnipLen+3] & 0x80 == 0x80 { // DstSubnet + DstNode
+			return fmt.Sprintf("%d,%d", p.Lon.DstSubnet, p.Lon.DstNode)
+		} else { // DstSubnet + DstNode + Group + GrpMemb
+			return fmt.Sprintf("%d,%d,g=%d,m=%d", p.Lon.DstSubnet, p.Lon.DstNode, p.Lon.Group, p.Lon.GrpMemb)
+		}
+	case 3: // DstSubnet + DstNode
+		return fmt.Sprintf("%d,%d,n=%012x", p.Lon.DstSubnet, p.Lon.DstNode, p.Lon.NeuronID)
+	default:
+		return "???"
+	}
+}
+
+func (p Packet) Debug() string {
+	return fmt.Sprintf("%v %v %v %s -> %s", p.bytes, p.Cnip, p.Lon, p.Src(), p.Dst())
+}
+
+func APDU_String(b []byte) string {
+	return fmt.Sprintf("dt=%d,size=%d", b[0], len(b)-1)
+}
+
 func (p Packet) String() string {
-	return fmt.Sprintf("%v %v %v", p.Cnip, p.Lon, p.bytes[CnipLen:])
+	var addrs string = fmt.Sprintf("%s -> %s", p.Src(), p.Dst())
+	var pdu string
+
+	switch p.Lon.PDUFmt {
+	case TPDU:
+		switch p.Lon.EnclPDU[0] & 0x70 >> 4 {
+			case 0:
+				pdu = "TPDU ACKD(0) " + APDU_String(p.Lon.EnclPDU[1:])
+			case 1:
+				pdu = "TPDU UnACKD_TPR(1) " + APDU_String(p.Lon.EnclPDU[1:])
+			case 2:
+				pdu = "TPDU ACK(2)"
+			case 4:
+				pdu = "TPDU REMINDER(4)"
+			case 5:
+				pdu = "TPDU REM/MSG(5)"
+			default:
+				pdu = fmt.Sprintf("TPDU ???(%d)", p.Lon.EnclPDU[0] & 0x70 >> 4)
+		}
+	case SPDU:
+		switch p.Lon.EnclPDU[0] & 0x70 >> 4 {
+			case 0:
+				pdu = "SPDU REQUEST(0) " + APDU_String(p.Lon.EnclPDU[1:])
+			case 2:
+				pdu = "SPDU RESPONSE(2) " + APDU_String(p.Lon.EnclPDU[1:])
+			case 4:
+				pdu = "SPDU REMINDER(4)"
+			case 5:
+				pdu = "SPDU REM/MSG(5)"
+			default:
+				pdu = fmt.Sprintf("SPDU ???(%d)", p.Lon.EnclPDU[0] & 0x70 >> 4)
+		}
+	case AuthPDU:
+		switch p.Lon.EnclPDU[0] & 0x30 >> 4 {
+			case 0:
+				pdu = "AuthPDU CHALLENGE(0)"
+			case 2:
+				pdu = "AuthPDU REPLY(2)"
+			default:
+				pdu = fmt.Sprintf("AuthPDU ???(%d)", p.Lon.EnclPDU[0] & 0x30 >> 4)
+		}
+	case APDU:
+		pdu = "APDU " + APDU_String(p.Lon.EnclPDU)
+	}
+
+	return addrs + " " + pdu
 }

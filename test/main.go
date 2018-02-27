@@ -11,7 +11,7 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	for n:=0; n<10; n++ {
+	for {
 		p, e := c.Read()
 		if e != nil {
 			fmt.Println(e)
